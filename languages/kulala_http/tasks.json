@@ -1,0 +1,46 @@
+[
+  {
+    "label": "Kulala: Run request",
+    "tags": ["kulala-http-request"],
+    "command": "zed_kulala",
+    "args": [
+      "$ZED_DIRNAME/$ZED_STEM",
+      "-v",
+      "headers",
+      "$ZED_FILE",
+      "-l",
+      "$((ZED_ROW+1))"
+    ],
+    "env": {},
+    "hide": "never",
+    "reveal": "no_focus",
+    "reveal_target": "center"
+  },
+  {
+    "label": "Kulala: Run request (verbose)",
+    "tags": ["kulala-http-request"],
+    "command": "zed_kulala",
+    "args": [
+      "$ZED_DIRNAME/$ZED_STEM",
+      "-v",
+      "verbose",
+      "$ZED_FILE",
+      "-l",
+      "$((ZED_ROW+1))"
+    ],
+    "env": {},
+    "hide": "never",
+    "reveal": "no_focus",
+    "reveal_target": "center"
+  },
+  {
+    "label": "Kulala: Run all request",
+    "tags": ["kulala-http-request"],
+    "command": "zed_kulala",
+    "args": ["$ZED_DIRNAME/$ZED_STEM", "-v", "headers", "$ZED_FILE"],
+    "env": {},
+    "hide": "never",
+    "reveal": "no_focus",
+    "reveal_target": "center"
+  }
+]

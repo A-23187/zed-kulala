@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+KULALA_CLI_PATH=~/MyProjects/kulala.nvim/lua/cli/kulala_cli.lua
+KULALA_CACHE_DIR=~/.cache/nvim/kulala
+KULALA_CACHE_HEADERS_FILE="${KULALA_CACHE_DIR}/headers.txt"
+KULALA_CACHE_BODY_FILE="${KULALA_CACHE_DIR}/body.txt"
+ZED_KULALA_BODY_FILE="$1"
+shift
+"$KULALA_CLI_PATH" "$@" && { case "$(sed -n 's/^Content-Type[ ]*:[ ]*//ip' "$KULALA_CACHE_HEADERS_FILE" | head -1 | cut -d\; -f1)" in
+    application/json) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.json" ;;
+    application/xml) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.xml" ;;
+    text/html) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.html" ;;
+esac } && cp "$KULALA_CACHE_BODY_FILE" "$ZED_KULALA_BODY_FILE" && zed "$ZED_KULALA_BODY_FILE" || zed "$KULALA_CACHE_BODY_FILE"
