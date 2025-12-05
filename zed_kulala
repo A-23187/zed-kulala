@@ -3,10 +3,65 @@ KULALA_CLI_PATH=~/MyProjects/kulala.nvim/lua/cli/kulala_cli.lua
 KULALA_CACHE_DIR=~/.cache/nvim/kulala
 KULALA_CACHE_HEADERS_FILE="${KULALA_CACHE_DIR}/headers.txt"
 KULALA_CACHE_BODY_FILE="${KULALA_CACHE_DIR}/body.txt"
+if [ "$1" = "--to-curl" ]; then
+    shift
+    nvim --headless -l - "$@" << EOF
+local kulala_path = "~/MyProjects/kulala.nvim/"
+vim.opt.rtp:prepend(vim.fs.normalize(kulala_path))
+local cmd = require("kulala.cmd")
+local colors = require("cli.colors")
+local document_parser = require("kulala.parser.document")
+local fs = require("kulala.utils.fs")
+local logger = require("kulala.logger")
+local request_parser = require("kulala.parser.request")
+colors.print = function() end
+local function to_curl(request)
+    local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary", "--data-urlencode" }
+    local previous_flag
+    local cmd = vim.iter(request.cmd):fold("", function(cmd, flag)
+        if not vim.tbl_contains(skip_flags, flag) and not vim.tbl_contains(skip_flags, previous_flag) then
+            flag = (flag:find("^%-") or not previous_flag) and flag or vim.fn.shellescape(flag)
+            cmd = cmd .. flag .. " "
+        end
+        if previous_flag == "--data-binary" or previous_flag == "--data-urlencode" then
+            local body = fs.read_file(flag:sub(2), true) or "[could not read file]"
+            body = #body > 1000 and flag or body
+            cmd = ("%s%s %s "):format(cmd, previous_flag, vim.fn.shellescape(body))
+        end
+        previous_flag = flag
+        return cmd
+    end)
+    return vim.trim(cmd)
+end
+cmd.run_parser = function(requests, line_nr, _callback)
+    if not requests then return logger.error("No requests found in the document") end
+    requests = document_parser.get_request_at(requests, line_nr)
+    if #requests == 0 then return Logger.error("No request found at current line") end
+    if #requests > 1 then return Logger.error("Multiple requests found in the document") end
+    local request = requests[1]
+    fs.delete_request_scripts_files()
+    fs.delete_cached_files(true)
+    local parsed_request, status = request_parser.parse(requests, request)
+    if not parsed_request then
+        if status == "empty" then return end
+        local msg = status == "skipped" and "is skipped" or "could not be parsed"
+        logger.warn(("Request at line: %s " .. msg):format(request.start_line or request.show_icon_line_number))
+    end
+    logger.info(to_curl(parsed_request))
+end
+vim.wait = function() end
+dofile(vim.fs.normalize(kulala_path .. "lua/cli/kulala_cli.lua"))
+EOF
+    exit
+fi
 ZED_KULALA_BODY_FILE="$1"
 shift
-"$KULALA_CLI_PATH" "$@" && { case "$(sed -n 's/^Content-Type[ ]*:[ ]*//ip' "$KULALA_CACHE_HEADERS_FILE" | head -1 | cut -d\; -f1)" in
-    application/json) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.json" ;;
-    application/xml) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.xml" ;;
-    text/html) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.html" ;;
-esac } && cp "$KULALA_CACHE_BODY_FILE" "$ZED_KULALA_BODY_FILE" && zed "$ZED_KULALA_BODY_FILE" || zed "$KULALA_CACHE_BODY_FILE"
+rm -f "$KULALA_CACHE_HEADERS_FILE" "$KULALA_CACHE_BODY_FILE"
+"$KULALA_CLI_PATH" "$@"
+[ -f "$KULALA_CACHE_HEADERS_FILE" ] && [ -f "$KULALA_CACHE_BODY_FILE" ] &&
+    case "$(sed -n '/^Content-Type[ ]*:[ ]*/{s/^Content-Type[ ]*:[ ]*//i;s/;.*$//;p;q;}' "$KULALA_CACHE_HEADERS_FILE" | tr -d '\r')" in
+        application/json) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.json"; jq '.' "$KULALA_CACHE_BODY_FILE" | sponge "$KULALA_CACHE_BODY_FILE" ;;
+        application/xml) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.xml" ;;
+        text/html) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.html" ;;
+        *) ZED_KULALA_BODY_FILE="$ZED_KULALA_BODY_FILE.txt" ;;
+    esac && cp "$KULALA_CACHE_BODY_FILE" "$ZED_KULALA_BODY_FILE" && zed "$ZED_KULALA_BODY_FILE"

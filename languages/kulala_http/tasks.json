@@ -42,5 +42,15 @@
     "hide": "never",
     "reveal": "no_focus",
     "reveal_target": "center"
+  },
+  {
+    "label": "Kulala: Convert to cURL",
+    "tags": ["kulala-http-request"],
+    "command": "zed_kulala",
+    "args": ["--to-curl", "$ZED_FILE", "-l", "$((ZED_ROW+1))"],
+    "env": {},
+    "hide": "never",
+    "reveal": "no_focus",
+    "reveal_target": "center"
   }
 ]
