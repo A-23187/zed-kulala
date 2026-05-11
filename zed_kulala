@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-KULALA_CLI_PATH=~/MyProjects/kulala.nvim/lua/cli/kulala_cli.lua
+KULALA_CLI_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/pack/core/opt/kulala.nvim/lua/cli/kulala_cli.lua"
 KULALA_CACHE_DIR=~/.cache/nvim/kulala
 KULALA_CACHE_HEADERS_FILE="${KULALA_CACHE_DIR}/headers.txt"
 KULALA_CACHE_BODY_FILE="${KULALA_CACHE_DIR}/body.txt"
 if [ "$1" = "--to-curl" ]; then
     shift
     nvim --headless -l - "$@" << EOF
-local kulala_path = "~/MyProjects/kulala.nvim/"
+local kulala_path = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "pack", "core", "opt", "kulala.nvim")
 vim.opt.rtp:prepend(vim.fs.normalize(kulala_path))
 local cmd = require("kulala.cmd")
 local colors = require("cli.colors")
