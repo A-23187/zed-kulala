@@ -50,7 +50,7 @@ cmd.run_parser = function(requests, line_nr, _callback)
     logger.info(to_curl(parsed_request))
 end
 vim.wait = function() end
-dofile(vim.fs.normalize(kulala_path .. "lua/cli/kulala_cli.lua"))
+dofile(vim.fs.normalize(kulala_path .. "/lua/cli/kulala_cli.lua"))
 EOF
     exit
 fi
